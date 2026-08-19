@@ -1,1 +1,3 @@
-# mading-lomba
+# Campus Hub
+
+Mading Digital Lomba Campus
