@@ -1,0 +1,257 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "CampusHub API",
+    "version": "1.0.0",
+    "description": "OpenAPI documentation for CampusHub backend services (auth, users, competitions)."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local dev server" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {},
+          "errors": {}
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["firstName","lastName","email","username","password","confirmPassword","gender"],
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "confirmPassword": { "type": "string" },
+          "gender": { "type": "string", "enum": ["male","female"] }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username","password"],
+        "properties": { "username": { "type": "string" }, "password": { "type": "string" } }
+      },
+      "GoogleLoginRequest": {
+        "type": "object",
+        "required": ["idToken"],
+        "properties": { "idToken": { "type": "string", "description": "ID token dari Google Identity Services (frontend)" } }
+      },
+      "AuthResponseData": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" }
+        }
+      },
+      "RefreshTokenRequest": { "type":"object", "required":["refreshToken"], "properties":{ "refreshToken": {"type":"string"} } },
+      "RefreshTokenResponseData": { "type":"object", "properties":{ "token": {"type":"string"} } },
+      "VerifyCodeRequest": { "type":"object", "required":["verificationCode"], "properties":{ "verificationCode": {"type":"integer"} } },
+      "ResetPasswordRequest": { "type":"object", "required":["password","confirmPassword"], "properties":{ "password": {"type":"string"}, "confirmPassword": {"type":"string"} } },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string" },
+          "username": { "type": "string" },
+          "gender": { "type": "string" },
+          "role": { "type": "string" },
+          "isVerified": { "type": "boolean" }
+        }
+      },
+      "UserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "username": { "type": "string" },
+          "gender": { "type": "string", "enum": ["male","female"] }
+        }
+      },
+      "UpdatePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "oldPassword": { "type": "string" },
+          "newPassword": { "type": "string" },
+          "confirmPassword": { "type": "string" }
+        }
+      },
+      "Competition": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "category": { "type": "string" },
+          "organizer": { "type": "string" },
+          "registrationDeadline": { "type": "string", "format": "date-time" },
+          "eventDate": { "type": "string", "format": "date-time" },
+          "prize": { "type": "string" },
+          "requirements": { "type": "string" },
+          "registrationLink": { "type": "string" },
+          "status": { "type": "string" },
+          "author": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CompetitionCreateRequest": {
+        "type": "object",
+        "required": ["title","description","category"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "category": { "type": "string" },
+          "organizer": { "type": "string" },
+          "registrationDeadline": { "type": "string", "format": "date-time" },
+          "eventDate": { "type": "string", "format": "date-time" },
+          "prize": { "type": "string" },
+          "requirements": { "type": "string" },
+          "registrationLink": { "type": "string" }
+        }
+      },
+      "PageableCompetitionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Competition" } },
+          "paging": { "type": "object", "properties": { "page": { "type": "integer" }, "size": { "type": "integer" }, "total": { "type": "integer" } } }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register user",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/google": {
+      "post": {
+        "summary": "Login/register via Google OAuth",
+        "description": "Menerima ID token dari Google Identity Services. Membuat akun baru otomatis (isVerified true) jika belum pernah login sebelumnya, atau menautkan ke akun manual dengan email yang sama.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoogleLoginRequest" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/verify-email": {
+      "get": {
+        "summary": "Verify email",
+        "parameters": [{ "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Verified", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/resend-verify-email": {
+      "post": {
+        "summary": "Resend verification email",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string" } }, "required": ["email"] } } } },
+        "responses": { "200": { "description": "Email sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "summary": "Request password reset code",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string" } }, "required": ["email"] } } } },
+        "responses": { "200": { "description": "Code sent", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/verify-code": {
+      "post": {
+        "summary": "Verify code and return token for reset",
+        "parameters": [{ "name": "email", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyCodeRequest" } } } },
+        "responses": { "200": { "description": "Token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "summary": "Reset password using token",
+        "parameters": [{ "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" } } } },
+        "responses": { "200": { "description": "Password reset", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/refresh-token": {
+      "post": {
+        "summary": "Refresh access token",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" } } } },
+        "responses": { "200": { "description": "New access token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Logout (revoke refresh token)",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "refreshToken": { "type": "string" } }, "required": ["refreshToken"] } } } },
+        "responses": { "200": { "description": "Logged out", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "summary": "Get current user profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "User retrieved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      },
+      "patch": {
+        "summary": "Update current user profile",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserUpdateRequest" } } } },
+        "responses": { "200": { "description": "User updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/users/me/password": {
+      "patch": {
+        "summary": "Change password (requires old password)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePasswordRequest" } } } },
+        "responses": { "200": { "description": "Password updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    },
+    "/api/competitions": {
+      "get": {
+        "summary": "List competitions (public)",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "fee", "in": "query", "schema": { "type": "string" } },
+          { "name": "format", "in": "query", "schema": { "type": "string" } },
+          { "name": "level", "in": "query", "schema": { "type": "string" } },
+          { "name": "tab", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Competitions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      },
+      "post": {
+        "summary": "Create a competition (authenticated)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompetitionCreateRequest" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponse" } } } } }
+      }
+    }
+  }
+}

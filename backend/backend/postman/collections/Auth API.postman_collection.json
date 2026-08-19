@@ -1,0 +1,494 @@
+{
+  "info": {
+    "_postman_id": "b7e3d9a1-5c2f-4e8a-9d41-auth00000001",
+    "name": "Auth API",
+    "description": "Koleksi untuk menguji semua endpoint autentikasi backend.\n\nAlur pengujian:\n1. Register â†’ email verifikasi dikirim\n2. Verify Email (tempel token dari link email ke variabel verifyToken)\n3. Login â†’ accessToken & refreshToken otomatis tersimpan ke environment\n4. Refresh Token â†’ accessToken baru\n5. Forgot Password â†’ Verify Code â†’ Reset Password",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
+              "const body = pm.response.json().data;",
+              "if (data && body.id) pm.environment.set('userId', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"firstName\": \"{{firstName}}\",\n    \"lastName\": \"{{lastName}}\",\n    \"email\": \"{{email}}\",\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\",\n    \"confirmPassword\": \"{{password}}\",\n    \"gender\": \"male\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "description": "Mendaftarkan user baru. Email verifikasi otomatis dikirim.\nUser belum bisa login sebelum verifikasi email."
+      }
+    },
+    {
+      "name": "Verify Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/verify-email?token={{verifyToken}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "verify-email"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{verifyToken}}"
+            }
+          ]
+        },
+        "description": "Verifikasi email. Isi variabel environment `verifyToken` dengan token dari link yang dikirim ke email."
+      }
+    },
+    {
+      "name": "Resend Verify Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/resend-verify-email",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "resend-verify-email"
+          ]
+        },
+        "description": "Mengirim ulang email verifikasi jika email pertama tidak sampai."
+      }
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "pm.test('mendapat accessToken & refreshToken', () => {",
+              "    pm.expect(body).to.have.property('accessToken');",
+              "    pm.expect(body).to.have.property('refreshToken');",
+              "});",
+              "// Simpan token otomatis ke environment untuk request berikutnya",
+              "if (body) {",
+              "    pm.environment.set('accessToken', body.accessToken);",
+              "    pm.environment.set('refreshToken', body.refreshToken);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Login. Hanya berhasil jika email sudah diverifikasi.\naccessToken & refreshToken otomatis disimpan ke environment."
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "pm.test('mendapat access token baru', () => pm.expect(body).to.have.property('token'));",
+              "if (body) pm.environment.set('accessToken', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/refresh-token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "refresh-token"
+          ]
+        },
+        "description": "Membuat access token baru dari refresh token (dipakai saat access token kedaluwarsa)."
+      }
+    },
+    {
+      "name": "Forgot Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "// Simpan kode verifikasi (juga dikirim ke email)",
+              "if (body) pm.environment.set('verificationCode', data);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/forgot-password",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "forgot-password"
+          ]
+        },
+        "description": "Langkah 1 reset password: kirim kode 6 digit ke email.\nKode otomatis disimpan ke variabel verificationCode."
+      }
+    },
+    {
+      "name": "Verify Code",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "pm.test('mendapat token reset', () => pm.expect(body).to.have.property('token'));",
+              "if (body) pm.environment.set('resetToken', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"verificationCode\": {{verificationCode}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/verify-code?email={{email}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "verify-code"
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{email}}"
+            }
+          ]
+        },
+        "description": "Langkah 2 reset password: cocokkan kode dari email.\nToken reset otomatis disimpan ke variabel resetToken."
+      }
+    },
+    {
+      "name": "Reset Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"password\": \"{{newPassword}}\",\n    \"confirmPassword\": \"{{newPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/reset-password?token={{resetToken}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "reset-password"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{resetToken}}"
+            }
+          ]
+        },
+        "description": "Langkah 3 reset password: ganti password memakai resetToken dari Verify Code.\nPassword baru tidak boleh sama dengan yang lama."
+      }
+    },
+    {
+      "name": "Get Me",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "pm.test('mendapat data user', () => {",
+              "    pm.expect(body).to.have.property('username');",
+              "    pm.expect(body).to.have.property('email');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-TOKEN",
+            "value": "{{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me"
+          ]
+        },
+        "description": "Ambil data user yang sedang login. Wajib header X-API-TOKEN (otomatis terisi dari environment setelah Login)."
+      }
+    },
+    {
+      "name": "Update Me",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json().data;",
+              "pm.test('profil terupdate', () => pm.expect(body).to.have.property('username'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-TOKEN",
+            "value": "{{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"firstName\": \"{{firstName}}\",\n    \"lastName\": \"{{lastName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me"
+          ]
+        },
+        "description": "Update profil (partial). Field yang bisa diubah: firstName, lastName, username, gender. Minimal satu field. Email & password tidak bisa diubah lewat endpoint ini."
+      }
+    },
+    {
+      "name": "Update Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "// Password berubah: sesuaikan variabel environment agar Login berikutnya pakai password baru",
+              "const old = pm.environment.get('password');",
+              "pm.environment.set('password', pm.environment.get('newPassword'));",
+              "pm.environment.set('newPassword', old);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-TOKEN",
+            "value": "{{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"oldPassword\": \"{{password}}\",\n    \"newPassword\": \"{{newPassword}}\",\n    \"confirmPassword\": \"{{newPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/me/password",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me",
+            "password"
+          ]
+        },
+        "description": "Ganti password. Wajib password lama. Setelah berhasil, semua sesi (refresh token) dicabut — perangkat lain harus login ulang."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}
